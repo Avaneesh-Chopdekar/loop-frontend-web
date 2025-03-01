@@ -2,13 +2,13 @@ import { createLazyFileRoute } from "@tanstack/react-router";
 import JoinCreateChat from "../components/join-create-chat";
 
 export const Route = createLazyFileRoute("/")({
-  component: Index,
+	component: Index,
 });
 
 function Index() {
-  return (
-    <div className="">
-      <JoinCreateChat />
-    </div>
-  );
+	return (
+		<div className="">
+			<JoinCreateChat />
+		</div>
+	);
 }
