@@ -22,7 +22,7 @@ if (rootElement && !rootElement.innerHTML) {
 	const root = ReactDOM.createRoot(rootElement);
 	root.render(
 		<StrictMode>
-			<Toaster />
+			<Toaster richColors />
 			<RouterProvider router={router} />
 		</StrictMode>,
 	);
