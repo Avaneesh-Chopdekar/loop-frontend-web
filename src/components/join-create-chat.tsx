@@ -1,5 +1,6 @@
 import { type ChangeEvent, useState } from "react";
 import { toast } from "sonner";
+import RoomService from "../services/room-service";
 
 export default function JoinCreateChat() {
 	const [detail, setDetail] = useState({
@@ -53,11 +54,19 @@ export default function JoinCreateChat() {
 		console.log(detail);
 	}
 
-	function createRoom() {
+	async function createRoom() {
 		if (!validate()) {
 			return;
 		}
 		console.log(detail);
+		try {
+			const response = await RoomService.createRoom(detail.roomId);
+			// console.log(response);
+			toast.success(`Room ${response.roomId} created successfully`);
+		} catch (error) {
+			// console.log(error);
+			toast.error("Room already exists, try another ID");
+		}
 	}
 
 	return (
