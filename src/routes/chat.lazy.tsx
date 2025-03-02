@@ -7,6 +7,7 @@ import { useStore } from "../store/use-store";
 import { toast } from "sonner";
 import RoomService from "../services/room-service";
 import type { MessageRequest } from "../types/message";
+import { timeAgo } from "../helper/time-ago";
 
 export const Route = createLazyFileRoute("/chat")({
 	component: RouteComponent,
@@ -43,16 +44,6 @@ function RouteComponent() {
 			loadMessages();
 		}
 	}, [roomId, connected]);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: I want to re-render the component when messages changes
-	useEffect(() => {
-		if (chatBoxRef.current) {
-			chatBoxRef.current.scroll({
-				top: chatBoxRef.current.scrollHeight,
-				behavior: "smooth",
-			});
-		}
-	}, [messages]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
@@ -96,6 +87,13 @@ function RouteComponent() {
 
 			stompClient.send(`/app/sendMessage/${roomId}`, {}, JSON.stringify(message));
 			setInput("");
+			inputRef.current?.focus();
+			if (chatBoxRef.current) {
+				chatBoxRef.current.scroll({
+					top: chatBoxRef.current.scrollHeight,
+					behavior: "smooth",
+				});
+			}
 		}
 
 		//
@@ -154,6 +152,7 @@ function RouteComponent() {
 								<div className="flex flex-col gap-0.5">
 									<p className="text-sm font-bold">{message.sender}</p>
 									<p>{message.content}</p>
+									<p className="text-xs text-gray-400">{timeAgo(message.timeStamp)}</p>
 								</div>
 							</div>
 						</div>
