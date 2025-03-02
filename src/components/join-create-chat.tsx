@@ -1,12 +1,19 @@
 import { type ChangeEvent, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import RoomService from "../services/room-service";
+import { useStore } from "../store/use-store";
+import validate from "../helper/validate";
 
 export default function JoinCreateChat() {
 	const [detail, setDetail] = useState({
 		username: "",
 		roomId: "",
 	});
+
+	const { setRoomId, setUser, setConnected } = useStore();
+
+	const navigate = useNavigate();
 
 	function handleFormInputEvent(event: ChangeEvent<HTMLInputElement>) {
 		setDetail((prev) => ({
@@ -15,57 +22,40 @@ export default function JoinCreateChat() {
 		}));
 	}
 
-	function validate() {
-		if (!detail.username) {
-			toast.error("Username is required");
-			return false;
-		}
-		if (!/^[a-zA-Z0-9_]{3,20}$/.test(detail.username)) {
-			toast.error(
-				"Username must be 3-20 characters long and contain only letters, numbers, and underscores",
-				{
-					closeButton: true,
-					duration: 8000,
-				},
-			);
-			return false;
-		}
-		if (!detail.roomId) {
-			toast.error("Room ID is required");
-			return false;
-		}
-		if (!/^[a-zA-Z0-9_]{3,20}$/.test(detail.roomId)) {
-			toast.error(
-				"Room ID must be 3-20 characters long and contain only letters, numbers, and underscores",
-				{
-					closeButton: true,
-					duration: 8000,
-				},
-			);
-			return false;
-		}
-		return true;
-	}
-
-	function joinRoom() {
-		if (!validate()) {
+	async function joinRoom() {
+		if (!validate(detail)) {
 			return;
 		}
-		console.log(detail);
+		// console.log(detail);
+		try {
+			const response = await RoomService.joinRoom(detail.roomId);
+			setUser(detail.username);
+			setRoomId(detail.roomId);
+			setConnected(true);
+			navigate({ to: "/chat" });
+			toast.success(`Room ${response.roomId} joined successfully`);
+		} catch (error: unknown) {
+			console.log(error);
+			toast.error(error.response.data.message || "Error joining room, try again");
+		}
 	}
 
 	async function createRoom() {
-		if (!validate()) {
+		if (!validate(detail)) {
 			return;
 		}
-		console.log(detail);
+		// console.log(detail);
 		try {
 			const response = await RoomService.createRoom(detail.roomId);
 			// console.log(response);
+			setUser(detail.username);
+			setRoomId(detail.roomId);
+			setConnected(true);
+			navigate({ to: "/chat" });
 			toast.success(`Room ${response.roomId} created successfully`);
 		} catch (error) {
 			// console.log(error);
-			toast.error("Room already exists, try another ID");
+			toast.error(error.response.data.message || "Error creating room, try another ID");
 		}
 	}
 

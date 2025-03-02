@@ -6,4 +6,6 @@ export const useStore = create<StoreType>()((set) => ({
   setRoomId: (roomId: string) => set({ roomId }),
   user: null,
   setUser: (user: string) => set({ user }),
+  connected: false,
+  setConnected: (connected: boolean) => set({ connected }),
 }));

@@ -1,6 +1,11 @@
-import { createLazyFileRoute } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import { SendHorizontal } from "lucide-react";
-import { useRef, useState } from "react";
+import SockJS from "sockjs-client";
+import { type CompatClient, Stomp } from "@stomp/stompjs";
+import { useStore } from "../store/use-store";
+import { toast } from "sonner";
+import RoomService from "../services/room-service";
 import type { MessageRequest } from "../types/message";
 
 export const Route = createLazyFileRoute("/chat")({
@@ -8,35 +13,102 @@ export const Route = createLazyFileRoute("/chat")({
 });
 
 function RouteComponent() {
+	const navigate = useNavigate();
+	const { connected, roomId, user, setRoomId, setUser, setConnected } = useStore();
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: I want to re-render the component when connected/user/roomId changes
+	useEffect(() => {
+		if (!connected) {
+			navigate({ to: "/" });
+		}
+	}, [connected, roomId, user, navigate]);
+
 	const isDevelopment = import.meta.env.MODE === "development";
+	const [messages, setMessages] = useState<MessageRequest[]>([]);
 	const [input, setInput] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
 	const chatBoxRef = useRef<HTMLDivElement>(null);
-	const [stompClient, setStompClient] = useState(null);
-	const [roomId, setRoomId] = useState("secret-room");
-	const [user, setUser] = useState("Avaneesh");
-	const [messages, setMessages] = useState<MessageRequest[]>([
-		{
-			sender: "Jethalal",
-			content: "Hello World",
-			roomId,
-		},
-		{
-			sender: "Avaneesh",
-			content: "Hello World",
-			roomId,
-		},
-		{
-			sender: "Popatlal",
-			content: "Hello World",
-			roomId,
-		},
-		{
-			sender: "Bhide",
-			content: "Hello World",
-			roomId,
-		},
-	]);
+	const [stompClient, setStompClient] = useState<CompatClient | null>(null);
+
+	useEffect(() => {
+		async function loadMessages() {
+			try {
+				if (!roomId) return;
+				const messages = await RoomService.getMessages(roomId);
+				// console.log(messages);
+				setMessages(messages);
+			} catch (error) {}
+		}
+		if (connected) {
+			loadMessages();
+		}
+	}, [roomId, connected]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: I want to re-render the component when messages changes
+	useEffect(() => {
+		if (chatBoxRef.current) {
+			chatBoxRef.current.scroll({
+				top: chatBoxRef.current.scrollHeight,
+				behavior: "smooth",
+			});
+		}
+	}, [messages]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useEffect(() => {
+		const connectWebSocket = () => {
+			if (!roomId || !user) return;
+			console.log("Connecting to WebSocket");
+			const sock = new SockJS("http://localhost:8080/chat");
+			const client = Stomp.over(sock);
+			client.connect(
+				{},
+				() => {
+					setStompClient(client);
+					console.log("Connected to Room", roomId);
+					toast.success(`Connected to Room ${roomId}`);
+					client.subscribe(`/topic/room/${roomId}`, (message) => {
+						console.log(message);
+						const msg = JSON.parse(message.body);
+						setMessages((prevMessages) => [...prevMessages, msg]);
+					});
+				},
+				(error: unknown) => {
+					toast.error(`Error connecting to Room ${roomId}`);
+				},
+			);
+		};
+
+		if (connected) {
+			connectWebSocket();
+		}
+	}, [roomId]);
+
+	const sendMessage = async () => {
+		if (stompClient && connected) {
+			const message = {
+				sender: user,
+				content: input.trim(),
+				roomId: roomId,
+			};
+
+			console.log("Sending message", message);
+
+			stompClient.send(`/app/sendMessage/${roomId}`, {}, JSON.stringify(message));
+			setInput("");
+		}
+
+		//
+	};
+
+	function handleLogout() {
+		if (!stompClient) return;
+		stompClient.disconnect();
+		setConnected(false);
+		setRoomId("");
+		setUser("");
+		navigate({ to: "/" });
+	}
 
 	return (
 		<main>
@@ -56,6 +128,7 @@ function RouteComponent() {
 				<div>
 					<button
 						type="button"
+						onClick={handleLogout}
 						className="bg-red-500 hover:bg-red-600 active:bg-red-700 transition-colors duration-200 text-white px-6 py-2 rounded-full cursor-pointer"
 					>
 						Exit
@@ -96,9 +169,15 @@ function RouteComponent() {
 					value={input}
 					onChange={(e) => setInput(e.target.value)}
 					ref={inputRef}
+					onKeyDown={(e) => {
+						if (e.key === "Enter") {
+							sendMessage();
+						}
+					}}
 				/>
 				<button
 					type="button"
+					onClick={sendMessage}
 					className="bg-green-700 hover:bg-green-800 active:bg-green-900 transition-colors duration-200 text-white py-2 px-6 rounded-full cursor-pointer flex justify-center items-center gap-2"
 				>
 					Send <SendHorizontal size={20} />
