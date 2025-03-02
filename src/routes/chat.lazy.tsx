@@ -31,6 +31,16 @@ function RouteComponent() {
 	const chatBoxRef = useRef<HTMLDivElement>(null);
 	const [stompClient, setStompClient] = useState<CompatClient | null>(null);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useEffect(() => {
+		if (chatBoxRef.current) {
+			chatBoxRef.current?.scroll({
+				top: chatBoxRef.current.scrollHeight,
+				behavior: "smooth",
+			});
+		}
+	}, [messages]);
+
 	useEffect(() => {
 		async function loadMessages() {
 			try {
@@ -64,7 +74,7 @@ function RouteComponent() {
 						setMessages((prevMessages) => [...prevMessages, msg]);
 					});
 				},
-				(error: unknown) => {
+				() => {
 					toast.error(`Error connecting to Room ${roomId}`);
 				},
 			);
@@ -88,12 +98,6 @@ function RouteComponent() {
 			stompClient.send(`/app/sendMessage/${roomId}`, {}, JSON.stringify(message));
 			setInput("");
 			inputRef.current?.focus();
-			if (chatBoxRef.current) {
-				chatBoxRef.current.scroll({
-					top: chatBoxRef.current.scrollHeight,
-					behavior: "smooth",
-				});
-			}
 		}
 
 		//
@@ -134,7 +138,10 @@ function RouteComponent() {
 				</div>
 			</header>
 
-			<section className="py-20 px-4 w-full md:w-2/3 mx-auto h-screen overflow-auto">
+			<section
+				ref={chatBoxRef}
+				className="py-20 px-4 w-full md:w-2/3 mx-auto h-screen overflow-auto"
+			>
 				{messages.map((message, index) => (
 					<div
 						key={`${index}-${message.content}`}

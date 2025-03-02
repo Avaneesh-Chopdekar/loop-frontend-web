@@ -36,7 +36,14 @@ export default function JoinCreateChat() {
 			toast.success(`Room ${response.roomId} joined successfully`);
 		} catch (error: unknown) {
 			console.log(error);
-			toast.error(error.response.data.message || "Error joining room, try again");
+			if (error instanceof Error) {
+				toast.error(
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+					(error as any).response?.data?.message || "Error joining room, try another ID",
+				);
+			} else {
+				toast.error("Error joining room, try another ID");
+			}
 		}
 	}
 
@@ -55,7 +62,14 @@ export default function JoinCreateChat() {
 			toast.success(`Room ${response.roomId} created successfully`);
 		} catch (error) {
 			// console.log(error);
-			toast.error(error.response.data.message || "Error creating room, try another ID");
+			if (error instanceof Error) {
+				toast.error(
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+					(error as any).response?.data?.message || "Error creating room, try another ID",
+				);
+			} else {
+				toast.error("Error creating room, try another ID");
+			}
 		}
 	}
 
