@@ -4,7 +4,7 @@ export type MessageRequest = {
   sender: string;
   content: string;
   roomId: string;
-  timeStamp: string;
+  timestamp: string;
 };
 
 export type Message = MessageRequest & BaseType;

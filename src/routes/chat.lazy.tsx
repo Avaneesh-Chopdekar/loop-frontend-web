@@ -112,6 +112,8 @@ function RouteComponent() {
 		navigate({ to: "/" });
 	}
 
+	console.log(timeAgo("2025-03-02T17:57:52.631+00:00"));
+
 	return (
 		<main>
 			<header className="fixed w-full flex justify-between items-center p-4 bg-gray-200 dark:bg-gray-800">
@@ -159,7 +161,7 @@ function RouteComponent() {
 								<div className="flex flex-col gap-0.5">
 									<p className="text-sm font-bold">{message.sender}</p>
 									<p>{message.content}</p>
-									<p className="text-xs text-gray-400">{timeAgo(message.timeStamp)}</p>
+									<p className="text-xs text-gray-400">{timeAgo(message.timestamp)}</p>
 								</div>
 							</div>
 						</div>
